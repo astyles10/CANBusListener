@@ -12,6 +12,9 @@ https://www.seeedstudio.com/blog/2019/11/27/introduction-to-can-bus-and-how-to-u
 https://www.instructables.com/Hack-your-vehicle-CAN-BUS-with-Arduino-and-Seeed-C/
 https://www.instructables.com/CAN-Bus-Sniffing-and-Broadcasting-with-Arduino/
 
+OBD2 Message Format (Parameter IDs):
+https://en.wikipedia.org/wiki/OBD-II_PIDs
+
 Arduino Library for OBD2:
 https://www.arduino.cc/reference/en/libraries/obd2/
 
