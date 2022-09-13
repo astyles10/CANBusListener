@@ -9,6 +9,9 @@ https://en.wikipedia.org/wiki/On-board_diagnostics#OBD-II_diagnostic_connector
 
 Useful Links:
 https://www.reddit.com/r/CarHacking/
+https://www.csselectronics.com/pages/obd2-explained-simple-intro
+
+Guides:
 https://www.seeedstudio.com/blog/2019/11/27/introduction-to-can-bus-and-how-to-use-it-with-arduino/
 https://www.instructables.com/Hack-your-vehicle-CAN-BUS-with-Arduino-and-Seeed-C/
 https://www.instructables.com/CAN-Bus-Sniffing-and-Broadcasting-with-Arduino/
