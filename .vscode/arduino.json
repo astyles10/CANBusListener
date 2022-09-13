@@ -1,6 +1,6 @@
 {
     "port": "COM3",
     "board": "arduino:avr:uno",
-    "sketch": "Sketches/receive_check/receive_check.ino",
+    "sketch": "receive_check/receive_check.ino",
     "programmer": "arduino:avrisp"
 }
