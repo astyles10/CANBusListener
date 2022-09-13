@@ -1,6 +1,6 @@
 {
     "port": "COM3",
     "board": "arduino:avr:uno",
-    "sketch": "receive_check/receive_check.ino",
+    "sketch": "LCD_Screen\\LCDShield.ino",
     "programmer": "arduino:avrisp"
 }

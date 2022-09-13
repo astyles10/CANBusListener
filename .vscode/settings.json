@@ -54,6 +54,12 @@
     "new": "cpp",
     "ranges": "cpp",
     "stdexcept": "cpp",
-    "typeinfo": "cpp"
-  }
+    "typeinfo": "cpp",
+    "list": "cpp",
+    "xhash": "cpp",
+    "xstring": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp"
+  },
+  "C_Cpp.errorSquiggles": "Enabled"
 }

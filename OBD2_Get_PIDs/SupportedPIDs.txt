@@ -1,0 +1,41 @@
+PIDs supported [01 - 20]
+Monitor status since DTCs cleared
+Fuel system status
+Calculated engine load
+Engine coolant temperature
+Short term fuel trim �� Bank 1
+Long term fuel trim �� Bank 1
+Intake manifold absolute pressure
+Engine RPM
+Vehicle speed
+Timing advance
+Intake air temperature
+Throttle position
+Oxygen sensors present (in 2 banks)
+Oxygen Sensor 1 - Short term fuel trim
+Oxygen Sensor 2 - Short term fuel trim
+OBD standards this vehicle conforms to
+Run time since engine start
+PIDs supported [21 - 40]
+Distance traveled with malfunction indicator lamp (MIL) on
+Commanded evaporative purge
+Warm-ups since codes cleared
+Distance traveled since codes cleared
+Absolute Barometric Pressure
+Catalyst Temperature: Bank 1, Sensor 1
+Catalyst Temperature: Bank 1, Sensor 2
+PIDs supported [41 - 60]
+Monitor status this drive cycle
+Control module voltage
+Absolute load value
+Fuel���Air commanded equivalence ratio
+Relative throttle position
+Ambient air temperature
+Absolute throttle position B
+Absolute throttle position D
+Absolute throttle position E
+Commanded throttle actuator
+Time run with MIL on
+Time since trouble codes cleared
+Short term secondary oxygen sensor trim
+Long term secondary oxygen sensor trim
