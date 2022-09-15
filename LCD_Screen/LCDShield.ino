@@ -23,20 +23,28 @@ class ScreenMenu {
   } YScreen;
 
   ScreenMenu(LiquidCrystal& inLcdScreen)
-      : fLcdScreen(inLcdScreen), fCurrentScreenNumber(0){};
+      : fLcdScreen(inLcdScreen), fMillisAtLastButtonPress(0), fCurrentScreenNumber(0){};
   ~ScreenMenu() = default;
 
   void MoveDown() {
+    if ((millis() - fMillisAtLastButtonPress) < 500) {
+      return;
+    }
     if (--fCurrentScreenNumber < 0) {
       fCurrentScreenNumber = fScreens.size() - 1;
     }
     ChangeDisplay(fScreens[fCurrentScreenNumber]);
+    fMillisAtLastButtonPress = millis();
   }
   void MoveUp() {
+    if ((millis() - fMillisAtLastButtonPress) < 500) {
+      return;
+    }
     if (++fCurrentScreenNumber >= fScreens.size()) {
       fCurrentScreenNumber = 0;
     }
     ChangeDisplay(fScreens[fCurrentScreenNumber]);
+    fMillisAtLastButtonPress = millis();
   }
   void MoveLeft() {}
   void MoveRight() {}
@@ -56,6 +64,7 @@ class ScreenMenu {
     fLcdScreen.write(aLine2.c_str());
   }
 
+  unsigned long fMillisAtLastButtonPress;
   LiquidCrystal& fLcdScreen;
   std::vector<Screen> fScreens;
   int8_t fCurrentScreenNumber;
@@ -78,8 +87,8 @@ enum ButtonAnalogValues {
   BUTTON_SELECT = 800
 };
 
-static constexpr char ScreenEngineStats1[] = "%.0f rpm %.0f km/h";
-static constexpr char ScreenEngineStats2[] = "Ld: %.0f\% Thr: %.0f\%";
+static constexpr char ScreenEngineStats1[] = "%urpm %ukm/h";
+static constexpr char ScreenEngineStats2[] = "Ld: %u Thr: %u";
 
 static constexpr char ScreenDebug1[] = "OBD Std: %s";
 static constexpr char ScreenDebug2[] = "VIN: %s";
@@ -113,7 +122,7 @@ void DoLcdScreenWait() {
 void ConfigureScreenMenu() {
   gScreenMenu.RegisterScreen(
       {ScreenEngineStats1, ScreenEngineStats2, FormatEngineStatsScreen});
-  gScreenMenu.RegisterScreen({ScreenDebug1, ScreenDebug2, NULL});
+  gScreenMenu.RegisterScreen({ScreenDebug1, ScreenDebug2, FormatDebugScreen});
 }
 
 void OBDConnect() {
@@ -133,17 +142,23 @@ void OBDConnect() {
 
 void FormatEngineStatsScreen(String& Line1, String& Line2) {
   char aLineBuffer[17];
-  snprintf(aLineBuffer, 16, ScreenEngineStats1, OBD2.pidRead(ENGINE_RPM),
-           OBD2.pidRead(VEHICLE_SPEED));
+  // snprintf(aLineBuffer, 16, ScreenEngineStats1, OBD2.pidRead(ENGINE_RPM),
+  //          OBD2.pidRead(VEHICLE_SPEED));
+  float engineSpeed = 100.0;
+  float vehicleSpeed = 50.0;
 
+  snprintf(aLineBuffer, 16, ScreenEngineStats1, static_cast<unsigned>(engineSpeed), static_cast<unsigned>(vehicleSpeed));
   Line1 = aLineBuffer;
-  snprintf(aLineBuffer, 16, ScreenEngineStats2, 1, 2);
-  Line2 = aLineBuffer;
+
+  char aLineBuffer2[17];
+  snprintf(aLineBuffer2, 16, ScreenEngineStats2, 1, 2);
+  Line2 = aLineBuffer2;
 }
 
 void FormatDebugScreen(String& Line1, String& Line2) {
   char aLineBuffer[17];
-  snprintf(aLineBuffer, 16, ScreenDebug1, OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
+  // snprintf(aLineBuffer, 16, ScreenDebug1, OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
+  snprintf(aLineBuffer, 16, ScreenDebug1, "OBD2");
   Line1 = aLineBuffer;
 }
 
@@ -155,9 +170,6 @@ void setup() {
   SetDefaultLcdScreen();
   ConfigureScreenMenu();
   // OBDConnect();
-  // char buf[17];
-  // snprintf(buf, 16, ScreenEngineStats1, 1, 2);
-  // LcdScreen.print(buf);
 
   // String val = OBD2.vinRead();
   // float speed = OBD2.pidRead(0x0C);
@@ -168,14 +180,10 @@ void loop() {
   if (buttonRead <= BUTTON_RIGHT) {
     // menuChange(++currentScreenNumber);
   } else if (buttonRead <= BUTTON_UP) {
-    menuChange(--currentScreenNumber);
+    gScreenMenu.MoveUp();
   } else if (buttonRead <= BUTTON_DOWN) {
-    menuChange(++currentScreenNumber);
+    gScreenMenu.MoveDown();
   } else if (buttonRead <= BUTTON_LEFT) {
   } else if (buttonRead <= BUTTON_SELECT) {
   }
-}
-
-void menuChange(uint8_t menuNumber) {
-  switch (menuNumber) {};
 }
