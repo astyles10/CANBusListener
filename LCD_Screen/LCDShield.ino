@@ -7,17 +7,20 @@
 
 class ScreenMenu {
  public:
-  typedef void (*ScreenCallback)(void);
+  typedef void (*ScreenCallback)(String&, String&);
   typedef struct Screen {
     const String fLine1;
     const String fLine2;
-    const ScreenCallback fCallback;
+    ScreenCallback fCallback;
     Screen(const String& inLine1, const String& inLine2,
-           ScreenCallback& inCallback)
-        : fLine1(inLine1), fLine2(inLine2), fCallback(inCallback){};
-    Screen(const String& inLine1, const String& inLine2)
-        : fLine1(inLine1), fLine2(inLine2), fCallback(NULL){};
-  } Screen;
+           ScreenCallback inCallback)
+        : fLine1(inLine1), fLine2(inLine2) {
+      fCallback = inCallback;
+    };
+    Screen operator=(const Screen& other) {
+      return {other.fLine1, other.fLine2, other.fCallback};
+    }
+  } YScreen;
 
   ScreenMenu(LiquidCrystal& inLcdScreen)
       : fLcdScreen(inLcdScreen), fCurrentScreenNumber(0){};
@@ -27,29 +30,30 @@ class ScreenMenu {
     if (--fCurrentScreenNumber < 0) {
       fCurrentScreenNumber = fScreens.size() - 1;
     }
-    ChangeDisplay(fScreens.at(fCurrentScreenNumber));
+    ChangeDisplay(fScreens[fCurrentScreenNumber]);
   }
   void MoveUp() {
     if (++fCurrentScreenNumber >= fScreens.size()) {
       fCurrentScreenNumber = 0;
     }
-    ChangeDisplay(fScreens.at(fCurrentScreenNumber));
+    ChangeDisplay(fScreens[fCurrentScreenNumber]);
   }
   void MoveLeft() {}
   void MoveRight() {}
 
-  void RegisterScreen(const Screen& newScreen) { fScreens.push_back(newScreen); }
+  void RegisterScreen(const YScreen& newScreen) {
+    fScreens.push_back(newScreen);
+  }
 
  private:
   void ChangeDisplay(Screen& inScreen) {
     fLcdScreen.clear();
     fLcdScreen.setCursor(0, 0);
-    // The string needs to be formatted in the callback
-    if (inScreen.fCallback) {
-    }
-    inScreen.fCallback();
-    fLcdScreen.write(inScreen.fLine1.c_str());
-    fLcdScreen.write(inScreen.fLine2.c_str());
+    String aLine1, aLine2;
+    inScreen.fCallback(aLine1, aLine2);
+    fLcdScreen.write(aLine1.c_str());
+    fLcdScreen.setCursor(0, 1);
+    fLcdScreen.write(aLine2.c_str());
   }
 
   LiquidCrystal& fLcdScreen;
@@ -74,8 +78,8 @@ enum ButtonAnalogValues {
   BUTTON_SELECT = 800
 };
 
-static constexpr char ScreenEngineStats1[] = "%u rpm %u km/h";
-static constexpr char ScreenEngineStats2[] = "Ld: %u\% Thr: %u\%";
+static constexpr char ScreenEngineStats1[] = "%.0f rpm %.0f km/h";
+static constexpr char ScreenEngineStats2[] = "Ld: %.0f\% Thr: %.0f\%";
 
 static constexpr char ScreenDebug1[] = "OBD Std: %s";
 static constexpr char ScreenDebug2[] = "VIN: %s";
@@ -106,6 +110,12 @@ void DoLcdScreenWait() {
   }
 }
 
+void ConfigureScreenMenu() {
+  gScreenMenu.RegisterScreen(
+      {ScreenEngineStats1, ScreenEngineStats2, FormatEngineStatsScreen});
+  gScreenMenu.RegisterScreen({ScreenDebug1, ScreenDebug2, NULL});
+}
+
 void OBDConnect() {
   LcdScreen.print("Connecting");
   while (true) {
@@ -121,14 +131,29 @@ void OBDConnect() {
   }
 }
 
+void FormatEngineStatsScreen(String& Line1, String& Line2) {
+  char aLineBuffer[17];
+  snprintf(aLineBuffer, 16, ScreenEngineStats1, OBD2.pidRead(ENGINE_RPM),
+           OBD2.pidRead(VEHICLE_SPEED));
+
+  Line1 = aLineBuffer;
+  snprintf(aLineBuffer, 16, ScreenEngineStats2, 1, 2);
+  Line2 = aLineBuffer;
+}
+
+void FormatDebugScreen(String& Line1, String& Line2) {
+  char aLineBuffer[17];
+  snprintf(aLineBuffer, 16, ScreenDebug1, OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
+  Line1 = aLineBuffer;
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial)
     ;
   LcdScreen.begin(16, 2);
   SetDefaultLcdScreen();
-  const ScreenMenu::Screen aTestScreen(String(ScreenTest1), String(ScreenTest2));
-  gScreenMenu.RegisterScreen(aTestScreen);
+  ConfigureScreenMenu();
   // OBDConnect();
   // char buf[17];
   // snprintf(buf, 16, ScreenEngineStats1, 1, 2);
