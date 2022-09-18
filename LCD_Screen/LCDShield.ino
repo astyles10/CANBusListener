@@ -1,189 +1,185 @@
+// Downloaded CAN and OBD2 libraries from Arduino library manager
 #include <CAN.h>
-#include <LiquidCrystal.h>
 #include <OBD2.h>
 
-#include <iterator>
-#include <vector>
+#include "OBDDefs.hpp"
+#include "ScreenHelper.hpp"
+#include "TimerHelper.hpp"
 
-class ScreenMenu {
- public:
-  typedef void (*ScreenCallback)(String&, String&);
-  typedef struct Screen {
-    const String fLine1;
-    const String fLine2;
-    ScreenCallback fCallback;
-    Screen(const String& inLine1, const String& inLine2,
-           ScreenCallback inCallback)
-        : fLine1(inLine1), fLine2(inLine2) {
-      fCallback = inCallback;
-    };
-    Screen operator=(const Screen& other) {
-      return {other.fLine1, other.fLine2, other.fCallback};
-    }
-  } YScreen;
-
-  ScreenMenu(LiquidCrystal& inLcdScreen)
-      : fLcdScreen(inLcdScreen), fMillisAtLastButtonPress(0), fCurrentScreenNumber(0){};
-  ~ScreenMenu() = default;
-
-  void MoveDown() {
-    if ((millis() - fMillisAtLastButtonPress) < 500) {
-      return;
-    }
-    if (--fCurrentScreenNumber < 0) {
-      fCurrentScreenNumber = fScreens.size() - 1;
-    }
-    ChangeDisplay(fScreens[fCurrentScreenNumber]);
-    fMillisAtLastButtonPress = millis();
-  }
-  void MoveUp() {
-    if ((millis() - fMillisAtLastButtonPress) < 500) {
-      return;
-    }
-    if (++fCurrentScreenNumber >= fScreens.size()) {
-      fCurrentScreenNumber = 0;
-    }
-    ChangeDisplay(fScreens[fCurrentScreenNumber]);
-    fMillisAtLastButtonPress = millis();
-  }
-  void MoveLeft() {}
-  void MoveRight() {}
-
-  void RegisterScreen(const YScreen& newScreen) {
-    fScreens.push_back(newScreen);
-  }
-
- private:
-  void ChangeDisplay(Screen& inScreen) {
-    fLcdScreen.clear();
-    fLcdScreen.setCursor(0, 0);
-    String aLine1, aLine2;
-    inScreen.fCallback(aLine1, aLine2);
-    fLcdScreen.write(aLine1.c_str());
-    fLcdScreen.setCursor(0, 1);
-    fLcdScreen.write(aLine2.c_str());
-  }
-
-  unsigned long fMillisAtLastButtonPress;
-  LiquidCrystal& fLcdScreen;
-  std::vector<Screen> fScreens;
-  int8_t fCurrentScreenNumber;
-};
-
-static constexpr uint8_t LCD_Reset = 8;
-static constexpr uint8_t LCD_Enable = 9;
-static constexpr uint8_t LCD_D7 = 7;
-static constexpr uint8_t LCD_D6 = 6;
-static constexpr uint8_t LCD_D5 = 5;
-static constexpr uint8_t LCD_D4 = 4;
-static constexpr uint8_t LCD_Backlight = 10;
+static constexpr uint8_t LCD_Reset = 9;
+static constexpr uint8_t LCD_Enable = 8;
+static constexpr uint8_t LCD_D7 = 4;
+static constexpr uint8_t LCD_D6 = 5;
+static constexpr uint8_t LCD_D5 = 6;
+static constexpr uint8_t LCD_D4 = 7;
 static constexpr uint8_t BUTTON_PIN_ANALOG = 0;
 
-enum ButtonAnalogValues {
-  BUTTON_RIGHT = 60,
-  BUTTON_UP = 200,
-  BUTTON_DOWN = 400,
-  BUTTON_LEFT = 600,
-  BUTTON_SELECT = 800
-};
+static constexpr char PageEngineStats1[] = "%lurpm %lukm/h";
+static constexpr char PageEngineStats2[] = "Ld: %u Thr: %u";
 
-static constexpr char ScreenEngineStats1[] = "%urpm %ukm/h";
-static constexpr char ScreenEngineStats2[] = "Ld: %u Thr: %u";
 
-static constexpr char ScreenDebug1[] = "OBD Std: %s";
-static constexpr char ScreenDebug2[] = "VIN: %s";
 
-static constexpr char ScreenTest1[] = "Line 1";
-static constexpr char ScreenTest2[] = "Line 2";
+static constexpr char PageFuelInfo1[] = "Fuel: %s";
+static constexpr char PageFuelInfo2[] = "Tank: %u/100";
 
-static constexpr char ScreenTest3[] = "Line 3";
-static constexpr char ScreenTest4[] = "Line 4";
+static constexpr char PageDebug1[] = "OBD Std: %s";
+static constexpr char PageDebug2[] = "ECU: %s";
 
-static uint8_t currentScreenNumber = 1;
-
-LiquidCrystal LcdScreen(LCD_Reset, LCD_Enable, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
-ScreenMenu gScreenMenu(LcdScreen);
-
-void SetDefaultLcdScreen() {
-  LcdScreen.clear();
-  LcdScreen.setCursor(0, 0);
-}
-
-void DoLcdScreenWait() {
-  static uint8_t column = 10;
-  LcdScreen.setCursor(column++, 0);
-  LcdScreen.write(".");
-  if (column > 16) {
-    column = 10;
-    SetDefaultLcdScreen();
-  }
-}
+static constexpr uint16_t kDebounceMs = 100;
+// Rename "ScreenMenu" to something more reflective of the actual class purpose
+ScreenMenu* gpScreenMenu;
+volatile static uint8_t gButtonPinInput = 0;
+static uint32_t gLastButtonPressMs = 0;
+volatile static bool gRefreshPage = false;
 
 void ConfigureScreenMenu() {
-  gScreenMenu.RegisterScreen(
-      {ScreenEngineStats1, ScreenEngineStats2, FormatEngineStatsScreen});
-  gScreenMenu.RegisterScreen({ScreenDebug1, ScreenDebug2, FormatDebugScreen});
+  gpScreenMenu->RegisterPage({true, FormatEngineStatsPage});
+  gpScreenMenu->RegisterPage({true, FormatFuelInfoPage});
+  gpScreenMenu->RegisterPage({false, FormatDebugPage});
+  gpScreenMenu->SetDefaultScreen();
 }
 
 void OBDConnect() {
-  LcdScreen.print("Connecting");
+  gpScreenMenu->WriteTemporaryPage("Connecting", "");
   while (true) {
     if (!OBD2.begin()) {
-      DoLcdScreenWait();
       delay(1000);
     } else {
-      LcdScreen.clear();
-      LcdScreen.setCursor(0, 0);
-      LcdScreen.write("Connected!");
+      gpScreenMenu->ClearLcdScreen();
+      gpScreenMenu->WriteTemporaryPage("Connected!", "");
       break;
     }
   }
 }
 
-void FormatEngineStatsScreen(String& Line1, String& Line2) {
+void FormatEngineStatsPage(String& Line1, String& Line2) {
   char aLineBuffer[17];
-  // snprintf(aLineBuffer, 16, ScreenEngineStats1, OBD2.pidRead(ENGINE_RPM),
-  //          OBD2.pidRead(VEHICLE_SPEED));
-  float engineSpeed = 100.0;
-  float vehicleSpeed = 50.0;
+  {
+    unsigned long aEngineSpeed = lround(OBD2.pidRead(ENGINE_RPM));
+    unsigned long aVehicleSpeed = lround(OBD2.pidRead(VEHICLE_SPEED));
 
-  snprintf(aLineBuffer, 16, ScreenEngineStats1, static_cast<unsigned>(engineSpeed), static_cast<unsigned>(vehicleSpeed));
-  Line1 = aLineBuffer;
-
-  char aLineBuffer2[17];
-  snprintf(aLineBuffer2, 16, ScreenEngineStats2, 1, 2);
-  Line2 = aLineBuffer2;
+    snprintf(aLineBuffer, 16, PageEngineStats1, aEngineSpeed, aVehicleSpeed);
+    Line1 = aLineBuffer;
+  }
+  {
+    unsigned long aEngineLoad = lround(OBD2.pidRead(CALCULATED_ENGINE_LOAD));
+    unsigned long aThrottlePosition = lround(OBD2.pidRead(THROTTLE_POSITION));
+    snprintf(aLineBuffer, 16, PageEngineStats2, aEngineLoad,
+             aThrottlePosition);
+    Line2 = aLineBuffer;
+  }
 }
 
-void FormatDebugScreen(String& Line1, String& Line2) {
-  char aLineBuffer[17];
-  // snprintf(aLineBuffer, 16, ScreenDebug1, OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
-  snprintf(aLineBuffer, 16, ScreenDebug1, "OBD2");
+void FormatFuelInfoPage(String& Line1, String& Line2) {
+  char aLineBuffer[33];
+  {
+    long aFuelType = lround(OBD2.pidRead(FUEL_TYPE));
+    snprintf(aLineBuffer, 32, PageFuelInfo1, DetermineFuelType(aFuelType));
+    Line1 = aLineBuffer;
+  }
+  {
+    uint8_t aFuelLevel =
+        static_cast<uint8_t>(OBD2.pidRead(FUEL_TANK_LEVEL_INPUT));
+    snprintf(aLineBuffer, 32, PageFuelInfo2, aFuelLevel);
+    Line2 = aLineBuffer;
+  }
+}
+
+void FormatDebugPage(String& Line1, String& Line2) {
+  char aLineBuffer[33];
+  uint8_t aObdStandard = static_cast<uint8_t>(
+      OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
+  snprintf(aLineBuffer, 32, PageDebug1, DetermineOBDStandard(aObdStandard));
   Line1 = aLineBuffer;
+  // snprintf(aLineBuffer, 32, PageDebug2, OBD2.ecuNameRead().c_str());
+  // Line2 = aLineBuffer;
+  // Line2 = OBD2.vinRead();
+}
+
+void HandleButtonRead() {
+  if ((millis() - gLastButtonPressMs) < kDebounceMs) {
+    return;
+  }
+
+  switch (gButtonPinInput) {
+    case A1:
+      gpScreenMenu->MoveLeft();
+      gLastButtonPressMs = millis();
+      break;
+    case A2:
+      gpScreenMenu->MoveRight();
+      gLastButtonPressMs = millis();
+      break;
+    case A3:
+      gpScreenMenu->MoveDown();
+      gLastButtonPressMs = millis();
+      break;
+    case A4:
+      gpScreenMenu->MoveUp();
+      gLastButtonPressMs = millis();
+      break;
+  }
+  if (gButtonPinInput) {
+    gButtonPinInput = 0;
+  }
+}
+
+void ConfigureInterrupts() {
+  pinMode(A1, INPUT_PULLUP);
+  pinMode(A2, INPUT_PULLUP);
+  pinMode(A3, INPUT_PULLUP);
+  pinMode(A4, INPUT_PULLUP);
+  // Enable interrupts on analog pins (PCINT1)
+  PCICR |= 0b00000010;
+  PCMSK1 |= 0b00011110;
+}
+
+void ConfigureTimer() {
+  TimerHelper aTimerSettings = TimerHelper::DetermineTimerSettings(8);
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+  OCR1A = aTimerSettings.GetTicks();
+  TCCR1B |= aTimerSettings.GetPrescaler().fCSRegisters;
+  TCCR1B |= (1 << WGM12);
+  TIMSK1 |= (1 << OCIE1A);
 }
 
 void setup() {
   Serial.begin(115200);
   while (!Serial)
     ;
-  LcdScreen.begin(16, 2);
-  SetDefaultLcdScreen();
+  LiquidCrystal aLcdScreen(LCD_Reset, LCD_Enable, LCD_D4, LCD_D5, LCD_D6,
+                           LCD_D7);
+  gpScreenMenu = new ScreenMenu(aLcdScreen);
+  gpScreenMenu->ClearLcdScreen();
+  OBDConnect();
   ConfigureScreenMenu();
-  // OBDConnect();
-
-  // String val = OBD2.vinRead();
-  // float speed = OBD2.pidRead(0x0C);
+  noInterrupts();
+  ConfigureInterrupts();
+  ConfigureTimer();
+  interrupts();
 }
 
 void loop() {
-  int buttonRead = analogRead(BUTTON_PIN_ANALOG);
-  if (buttonRead <= BUTTON_RIGHT) {
-    // menuChange(++currentScreenNumber);
-  } else if (buttonRead <= BUTTON_UP) {
-    gScreenMenu.MoveUp();
-  } else if (buttonRead <= BUTTON_DOWN) {
-    gScreenMenu.MoveDown();
-  } else if (buttonRead <= BUTTON_LEFT) {
-  } else if (buttonRead <= BUTTON_SELECT) {
+  HandleButtonRead();
+  if (gRefreshPage) {
+    gpScreenMenu->UpdatePage();
+    gRefreshPage = false;
   }
 }
+
+// https://www.electrosoftcloud.com/en/pcint-interrupts-on-arduino/
+ISR(PCINT1_vect) {
+  if (digitalRead(A1)) {
+    gButtonPinInput = A1;
+  } else if (digitalRead(A2)) {
+    gButtonPinInput = A2;
+  } else if (digitalRead(A3)) {
+    gButtonPinInput = A3;
+  } else if (digitalRead(A4)) {
+    gButtonPinInput = A4;
+  }
+}
+
+ISR(TIMER1_COMPA_vect) { gRefreshPage = true; }

@@ -7,7 +7,7 @@
 // ISR(TIM)
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial);
 
   Serial.println("OBD2 Supported PIDs");
