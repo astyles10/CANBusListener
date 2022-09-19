@@ -36,11 +36,11 @@ static const char* DetermineFuelType(const uint8_t inValue) {
     case (0x00):
       return "NA";
     case (0x01):
-      return "Gasoln";
+      return "Gasoline";
     case (0x02):
-      return "Mthnl";
+      return "Methanol";
     case (0x03):
-      return "Ethnl";
+      return "Ethanol";
     case (0x04):
       return "Diesel";
     case (0x05):
@@ -48,39 +48,39 @@ static const char* DetermineFuelType(const uint8_t inValue) {
     case (0x06):
       return "CNG";
     case (0x07):
-      return "Prpn";
+      return "Propane";
     case (0x08):
-      return "Elec";
+      return "Electric";
     case (0x09):
-      return "Bi Gasln";
+      return "Bifuel Gasoline";
     case (0x0A):
-      return "Bi Mthln";
+      return "Bifuel Methanol";
     case (0x0B):
-      return "Bi Ethln";
+      return "Bifuel Ethanol";
     case (0x0C):
-      return "Bi LPG";
+      return "Bifuel LPG";
     case (0x0D):
-      return "Bi CNG";
+      return "Bifuel CNG";
     case (0x0E):
-      return "Bi Prpn";
+      return "Bifuel Propane";
     case (0x0F):
-      return "Bi Elec";
+      return "Bifuel Electric";
     case (0x10):
-      return "Bi Elec+Cmb";
+      return "Bifuel Electric + Combustion";
     case (0x11):
-      return "Hy Gasln";
+      return "Hybrid Gasoline";
     case (0x12):
-      return "Hy Ethnl";
+      return "Hybrid Ethanol";
     case (0x13):
-      return "Hy Diesel";
+      return "Hybrid Diesel";
     case (0x14):
-      return "Hy Elec";
+      return "Hybrid Electric";
     case (0x15):
-      return "Hy Elec+Cmg";
+      return "Hybrid Electric + Combustion";
     case (0x16):
-      return "Hy Regen";
+      return "Hybrid Regenerative";
     case (0x17):
-      return "Bi Diesel";
+      return "Bifuel Diesel";
     default:
       return "???";
   }

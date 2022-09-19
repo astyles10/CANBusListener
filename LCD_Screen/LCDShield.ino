@@ -1,6 +1,8 @@
 // Downloaded CAN and OBD2 libraries from Arduino library manager
 #include <CAN.h>
 #include <OBD2.h>
+#include <SD.h>
+#include <SPI.h>
 
 #include "OBDDefs.hpp"
 #include "ScreenHelper.hpp"
@@ -13,6 +15,9 @@ static constexpr uint8_t LCD_D6 = 5;
 static constexpr uint8_t LCD_D5 = 6;
 static constexpr uint8_t LCD_D4 = 7;
 static constexpr uint8_t BUTTON_PIN_ANALOG = 0;
+
+static constexpr uint8_t SD_CS_PIN = 4;
+static constexpr char LOGFILE_NAME[] = "Logfile.csv";
 
 // Live Stats page lines
 static constexpr char LineVehicleSpeed[] = "Veh Spd: %lukm/h";
@@ -38,6 +43,10 @@ ScreenMenu* gpScreenMenu;
 volatile static uint8_t gButtonPinInput = 0;
 static uint32_t gLastButtonPressMs = 0;
 volatile static bool gRefreshPage = false;
+
+File gLogFile;
+static bool gLogfileLoaded = false;
+static bool gEnableLogging = false;
 
 void ConfigureScreenMenu() {
   gpScreenMenu->RegisterPage({true, FormatSpeedPage});
@@ -123,14 +132,32 @@ void FormatRuntimeStats(String& Line1, String& Line2) {
 }
 
 void FormatDebugPage(String& Line1, String& Line2) {
-  char aLineBuffer[33];
+  char aLineBuffer[21];
   uint8_t aObdStandard = static_cast<uint8_t>(
       OBD2.pidRead(OBD_STANDARDS_THIS_VEHICLE_CONFORMS_TO));
-  snprintf(aLineBuffer, 32, PageDebug1, DetermineOBDStandard(aObdStandard));
+  snprintf(aLineBuffer, 19, PageDebug1, DetermineOBDStandard(aObdStandard));
   Line1 = aLineBuffer;
-  // snprintf(aLineBuffer, 32, PageDebug2, OBD2.ecuNameRead().c_str());
-  // Line2 = aLineBuffer;
-  // Line2 = OBD2.vinRead();
+}
+
+void FormatLoggingPage(String& Line1, String& Line2) {
+  if (gEnableLogging && gLogfileLoaded) {
+    char aBuffer[65];
+    int aNumBytes = snprintf(aBuffer, 64, "Millis: %lu", millis());
+    gLogFile.write(aBuffer, aNumBytes);
+    Line1 = "Logging Enabled!";
+    Line2 = "";
+  }
+}
+
+void HandleLoadLogFile() {
+  if (!gLogfileLoaded) {
+    if (SD.begin(SD_CS_PIN)) {
+      gLogFile = SD.open(LOGFILE_NAME, FILE_WRITE);
+      if (gLogFile) {
+        gLogfileLoaded = true;
+      }
+    }
+  }
 }
 
 void HandleButtonRead() {
@@ -140,11 +167,11 @@ void HandleButtonRead() {
 
   switch (gButtonPinInput) {
     case A1:
-      gpScreenMenu->MoveLeft();
+      gpScreenMenu->DoButtonOne();
       gLastButtonPressMs = millis();
       break;
     case A2:
-      gpScreenMenu->MoveRight();
+      gpScreenMenu->DoButtonTwo();
       gLastButtonPressMs = millis();
       break;
     case A3:
@@ -190,6 +217,10 @@ void setup() {
                            LCD_D7);
   gpScreenMenu = new ScreenMenu(aLcdScreen);
   gpScreenMenu->ClearLcdScreen();
+  if (!SD.begin(SD_CS_PIN)) {
+    gpScreenMenu->WriteTemporaryPage("Failed to", "initialize SD!");
+    delay(1000);
+  }
   OBDConnect();
   ConfigureScreenMenu();
   noInterrupts();
@@ -201,7 +232,7 @@ void setup() {
 void loop() {
   HandleButtonRead();
   if (gRefreshPage) {
-    gpScreenMenu->UpdatePage();
+    gpScreenMenu->DoRefresh();
     gRefreshPage = false;
   }
 }

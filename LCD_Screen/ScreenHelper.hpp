@@ -5,14 +5,22 @@
 
 class ScreenMenu {
  public:
-  typedef void (*PageCallback)(String&, String&);
+  typedef void (*RefreshCallback)(String&, String&);
+  typedef void (*ButtonPressCallback)(void);
   typedef struct Page {
     bool fUpdates;
-    PageCallback fCallback;
-    Page(bool inUpdates, PageCallback inCallback)
-        : fUpdates(inUpdates), fCallback(inCallback) {}
+    RefreshCallback fRefreshCallback;
+    ButtonPressCallback fButtonOneCallback;
+    // ButtonPressCallback fButtonTwoCallback;
+    // Page() : fUpdates(false) {
+    //   fRefreshCallback = NULL;
+    //   fButtonOneCallback = NULL;
+    //   fButtonTwoCallback = NULL;
+    // }
+    Page(bool inUpdates, RefreshCallback inCallback)
+        : fUpdates(inUpdates), fRefreshCallback(inCallback) {}
     Page operator=(Page inOther) {
-      return { inOther.fUpdates, inOther.fCallback };
+      return {inOther.fUpdates, inOther.fRefreshCallback};
     }
   } Page;
 
@@ -36,15 +44,18 @@ class ScreenMenu {
     DisplayPage();
   }
 
-  void MoveLeft() { fLcdScreen.scrollDisplayLeft(); }
+  void DoButtonOne() {
+    if (fPages[fCurrentScreenNumber].fButtonOneCallback) {
+    }
+  }
 
-  void MoveRight() { fLcdScreen.scrollDisplayRight(); }
+  void DoButtonTwo() { fLcdScreen.scrollDisplayRight(); }
 
   void RegisterPage(const Page inPage) { fPages.push_back(inPage); }
 
   void DisplayPage() {
     String aLine1, aLine2;
-    fPages[fCurrentScreenNumber].fCallback(aLine1, aLine2);
+    fPages[fCurrentScreenNumber].fRefreshCallback(aLine1, aLine2);
     fLcdScreen.clear();
     fLcdScreen.setCursor(0, 0);
     fLcdScreen.write(aLine1.c_str());
@@ -52,7 +63,7 @@ class ScreenMenu {
     fLcdScreen.write(aLine2.c_str());
   }
 
-  void UpdatePage() {
+  void DoRefresh() {
     if (fPages[fCurrentScreenNumber].fUpdates) {
       DisplayPage();
     }
@@ -65,7 +76,7 @@ class ScreenMenu {
 
   void SetDefaultScreen() {
     fCurrentScreenNumber = 0;
-    UpdatePage();
+    DoRefresh();
   }
 
   void WriteTemporaryPage(const String& inLine1, const String& inLine2) {
