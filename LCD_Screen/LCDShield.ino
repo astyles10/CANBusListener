@@ -14,10 +14,17 @@ static constexpr uint8_t LCD_D5 = 6;
 static constexpr uint8_t LCD_D4 = 7;
 static constexpr uint8_t BUTTON_PIN_ANALOG = 0;
 
-static constexpr char PageEngineStats1[] = "%lurpm %lukm/h";
-static constexpr char PageEngineStats2[] = "Ld: %u Thr: %u";
-
-
+// Live Stats page lines
+static constexpr char LineVehicleSpeed[] = "Veh Spd: %lukm/h";
+static constexpr char LineEngineSpeed[] = "Eng Spd: %lurpm";
+static constexpr char LineEngineLoad[] = "Eng Load: %u/100";
+static constexpr char LineTimingAdvance[] = "Timing Adv: %dC";
+static constexpr char LineIntakeAirTemp[] = "Intake Air: %dC";
+static constexpr char LineThrottlePosition[] = "Throttle %u/100";
+static constexpr char LineCurrentRuntimeSeconds[] = "Runtime: %us";
+static constexpr char LineManifoldAbsolutePressure[] = "MAP: %ukPa";
+static constexpr char LineAmbientAirTemp[] = "Amb. Air: %dC";
+static constexpr char LineTimeSinceCodesCleared[] = "Code age %um";
 
 static constexpr char PageFuelInfo1[] = "Fuel: %s";
 static constexpr char PageFuelInfo2[] = "Tank: %u/100";
@@ -33,9 +40,11 @@ static uint32_t gLastButtonPressMs = 0;
 volatile static bool gRefreshPage = false;
 
 void ConfigureScreenMenu() {
-  gpScreenMenu->RegisterPage({true, FormatEngineStatsPage});
+  gpScreenMenu->RegisterPage({true, FormatSpeedPage});
+  gpScreenMenu->RegisterPage({true, FormatAirTemperaturePage});
   gpScreenMenu->RegisterPage({true, FormatFuelInfoPage});
-  gpScreenMenu->RegisterPage({false, FormatDebugPage});
+  gpScreenMenu->RegisterPage({true, FormatRuntimeStats});
+  // gpScreenMenu->RegisterPage({false, FormatDebugPage});
   gpScreenMenu->SetDefaultScreen();
 }
 
@@ -52,22 +61,40 @@ void OBDConnect() {
   }
 }
 
-void FormatEngineStatsPage(String& Line1, String& Line2) {
+void FormatSpeedPage(String& Line1, String& Line2) {
   char aLineBuffer[17];
   {
-    unsigned long aEngineSpeed = lround(OBD2.pidRead(ENGINE_RPM));
     unsigned long aVehicleSpeed = lround(OBD2.pidRead(VEHICLE_SPEED));
-
-    snprintf(aLineBuffer, 16, PageEngineStats1, aEngineSpeed, aVehicleSpeed);
+    snprintf(aLineBuffer, 16, LineVehicleSpeed, aVehicleSpeed);
     Line1 = aLineBuffer;
   }
   {
-    unsigned long aEngineLoad = lround(OBD2.pidRead(CALCULATED_ENGINE_LOAD));
-    unsigned long aThrottlePosition = lround(OBD2.pidRead(THROTTLE_POSITION));
-    snprintf(aLineBuffer, 16, PageEngineStats2, aEngineLoad,
-             aThrottlePosition);
+    unsigned long aEngineSpeed = lround(OBD2.pidRead(ENGINE_RPM));
+    snprintf(aLineBuffer, 16, LineEngineSpeed, aEngineSpeed);
     Line2 = aLineBuffer;
   }
+}
+
+void FormatEngineLoadValuePage(String& Line1, String& Line2) {
+  // unsigned long aEngineLoad = lround(OBD2.pidRead(CALCULATED_ENGINE_LOAD));
+}
+
+void FormatAirTemperaturePage(String& Line1, String& Line2) {
+  char aLineBuffer[17];
+  {
+    long aAmbientAirTemp = lround(OBD2.pidRead(AMBIENT_AIR_TEMPERATURE));
+    snprintf(aLineBuffer, 16, LineAmbientAirTemp, aAmbientAirTemp);
+    Line1 = aLineBuffer;
+  }
+  {
+    long aIntakeAirTemp = lround(OBD2.pidRead(AIR_INTAKE_TEMPERATURE));
+    snprintf(aLineBuffer, 16, LineIntakeAirTemp, aIntakeAirTemp);
+    Line2 = aLineBuffer;
+  }
+}
+
+void FormatThrottlePositionPage(String& Line1, String& Line2) {
+  // unsigned long aThrottlePosition = lround(OBD2.pidRead(THROTTLE_POSITION));
 }
 
 void FormatFuelInfoPage(String& Line1, String& Line2) {
@@ -83,6 +110,16 @@ void FormatFuelInfoPage(String& Line1, String& Line2) {
     snprintf(aLineBuffer, 32, PageFuelInfo2, aFuelLevel);
     Line2 = aLineBuffer;
   }
+}
+
+void FormatRuntimeStats(String& Line1, String& Line2) {
+  char aLineBuffer[17];
+  {
+    long aRuntimeSeconds = lround(OBD2.pidRead(RUN_TIME_SINCE_ENGINE_START));
+    snprintf(aLineBuffer, 16, LineCurrentRuntimeSeconds, aRuntimeSeconds);
+    Line1 = aLineBuffer;
+  }
+  Line2 = "";
 }
 
 void FormatDebugPage(String& Line1, String& Line2) {
