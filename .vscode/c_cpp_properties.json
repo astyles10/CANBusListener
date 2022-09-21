@@ -554,6 +554,7 @@
                 "C:/Program Files (x86)/Arduino/hardware/tools/avr/avr/include",
                 "C:/Program Files (x86)/Arduino/hardware/arduino/avr/variants/standard",
                 "C:/Program Files (x86)/Arduino/libraries/LiquidCrystal/src",
+                "C:/Program Files (x86)/Arduino/libraries/SD/src",
                 "C:/Users/alexa/Documents/Arduino/libraries/MemoryUsage/src"
             ],
             "forcedInclude": [
@@ -1073,9 +1074,8 @@
         },
         {
             "name": "Arduino",
-            "compilerPath": "/home/alex/Downloads/arduino-1.8.19/hardware/tools/avr/bin/avr-g++",
+            "compilerPath": "C:\\Program Files (x86)\\Arduino\\hardware\\tools\\avr\\bin\\avr-g++",
             "compilerArgs": [
-                "-w",
                 "-std=gnu++11",
                 "-fpermissive",
                 "-fno-exceptions",
@@ -1086,25 +1086,25 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "/home/alex/Downloads/arduino-1.8.19/hardware/arduino/avr/cores/arduino",
-                "/home/alex/Downloads/arduino-1.8.19/hardware/arduino/avr/variants/standard",
-                "/home/alex/Downloads/arduino-1.8.19/libraries/SD/src",
-                "/home/alex/Projects/Sketches/libraries/CAN/src",
-                "/home/alex/Downloads/arduino-1.8.19/hardware/arduino/avr/libraries/SPI/src",
-                "/home/alex/Projects/Sketches/libraries/OBD2/src",
-                "/home/alex/Projects/Sketches/libraries/LiquidCrystal/src",
-                "/home/alex/Downloads/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include",
-                "/home/alex/Downloads/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include-fixed",
-                "/home/alex/Downloads/arduino-1.8.19/hardware/tools/avr/avr/include"
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino",
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\variants\\standard",
+                "C:\\Users\\alexa\\Documents\\Arduino\\libraries\\CAN\\src",
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\SPI\\src",
+                "C:\\Users\\alexa\\Documents\\Arduino\\libraries\\OBD2\\src",
+                "C:\\Program Files (x86)\\Arduino\\libraries\\SD\\src",
+                "C:\\Program Files (x86)\\Arduino\\libraries\\LiquidCrystal\\src",
+                "c:\\program files (x86)\\arduino\\hardware\\tools\\avr\\lib\\gcc\\avr\\7.3.0\\include",
+                "c:\\program files (x86)\\arduino\\hardware\\tools\\avr\\lib\\gcc\\avr\\7.3.0\\include-fixed",
+                "c:\\program files (x86)\\arduino\\hardware\\tools\\avr\\avr\\include"
             ],
             "forcedInclude": [
-                "/home/alex/Downloads/arduino-1.8.19/hardware/arduino/avr/cores/arduino/Arduino.h"
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++11",
             "defines": [
                 "F_CPU=16000000L",
-                "ARDUINO=10819",
+                "ARDUINO=10815",
                 "ARDUINO_AVR_UNO",
                 "ARDUINO_ARCH_AVR",
                 "__DBL_MIN_EXP__=(-125)",

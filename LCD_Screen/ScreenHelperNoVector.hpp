@@ -1,8 +1,5 @@
 #include <LiquidCrystal.h>
 
-#include <iterator>
-#include <vector>
-
 class ScreenMenu {
  public:
   typedef void (*RefreshCallback)(String&, String&);
@@ -12,51 +9,56 @@ class ScreenMenu {
     RefreshCallback fRefreshCallback;
     ButtonPressCallback fButtonOneCallback;
     // ButtonPressCallback fButtonTwoCallback;
-    // Page() : fUpdates(false) {
-    //   fRefreshCallback = NULL;
-    //   fButtonOneCallback = NULL;
-    //   fButtonTwoCallback = NULL;
-    // }
-    Page(bool inUpdates, RefreshCallback inCallback)
-        : fUpdates(inUpdates), fRefreshCallback(inCallback) {}
-    Page operator=(Page inOther) {
-      return {inOther.fUpdates, inOther.fRefreshCallback};
+    Page() : fUpdates(false) {
+      fRefreshCallback = NULL;
+      fButtonOneCallback = NULL;
     }
+    Page(bool inUpdates, RefreshCallback inCallback)
+        : fUpdates(inUpdates), fRefreshCallback(inCallback) {
+      fButtonOneCallback = NULL;
+    }
+    Page(bool inUpdates, RefreshCallback inCallback, ButtonPressCallback inButtonPressCallback) :
+      fUpdates(inUpdates), fRefreshCallback(inCallback), fButtonOneCallback(inButtonPressCallback) {}
+    Page& operator=(Page& inOther) = default;
   } Page;
 
   ScreenMenu(LiquidCrystal& inLcdScreen)
-      : fLcdScreen(inLcdScreen), fCurrentScreenNumber(0) {
+      : fLcdScreen(inLcdScreen), fNumberOfPages(0), fCurrentScreenNumber(0) {
     fLcdScreen.begin(16, 2);
   };
   ~ScreenMenu() = default;
 
   void MoveDown() {
     if (--fCurrentScreenNumber < 0) {
-      fCurrentScreenNumber = fPages.size() - 1;
+      fCurrentScreenNumber = fNumberOfPages - 1;
     }
     DisplayPage();
   }
 
   void MoveUp() {
-    if (++fCurrentScreenNumber >= fPages.size()) {
+    if (++fCurrentScreenNumber >= fNumberOfPages) {
       fCurrentScreenNumber = 0;
     }
     DisplayPage();
   }
 
-  void DoButtonOne() {
+  void DoButtonThree() {
     if (fPages[fCurrentScreenNumber].fButtonOneCallback) {
+      fPages[fCurrentScreenNumber].fButtonOneCallback();
     }
   }
 
-  void DoButtonTwo() { fLcdScreen.scrollDisplayRight(); }
+  void DoButtonFour() { fLcdScreen.scrollDisplayRight(); }
 
-  void RegisterPage(const Page inPage) { fPages.push_back(inPage); }
+  void RegisterPage(Page&& inPage) {
+    fPages[fNumberOfPages++] = inPage;
+  }
 
   void DisplayPage() {
     String aLine1, aLine2;
     fPages[fCurrentScreenNumber].fRefreshCallback(aLine1, aLine2);
     fLcdScreen.clear();
+    fLcdScreen.flush();
     fLcdScreen.setCursor(0, 0);
     fLcdScreen.write(aLine1.c_str());
     fLcdScreen.setCursor(0, 1);
@@ -76,7 +78,7 @@ class ScreenMenu {
 
   void SetDefaultScreen() {
     fCurrentScreenNumber = 0;
-    DoRefresh();
+    DisplayPage();
   }
 
   void WriteTemporaryPage(const String& inLine1, const String& inLine2) {
@@ -88,6 +90,7 @@ class ScreenMenu {
 
  private:
   LiquidCrystal fLcdScreen;
-  std::vector<Page> fPages;
+  Page fPages[5];
+  uint8_t fNumberOfPages;
   int8_t fCurrentScreenNumber;
 };

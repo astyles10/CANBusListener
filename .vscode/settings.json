@@ -59,7 +59,8 @@
     "xhash": "cpp",
     "xstring": "cpp",
     "xtree": "cpp",
-    "xutility": "cpp"
+    "xutility": "cpp",
+    "xlocmes": "cpp"
   },
   "C_Cpp.errorSquiggles": "Enabled"
 }

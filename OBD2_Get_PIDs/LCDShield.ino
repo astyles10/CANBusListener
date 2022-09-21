@@ -1,5 +1,6 @@
 // Downloaded CAN and OBD2 libraries from Arduino library manager
 #include <CAN.h>
+#include <MemoryUsage.h>
 #include <OBD2.h>
 #include <SD.h>
 #include <SPI.h>
@@ -42,18 +43,19 @@ static constexpr uint16_t kDebounceMs = 100;
 ScreenMenu* gpScreenMenu;
 volatile static uint8_t gButtonPinInput = 0;
 static uint32_t gLastButtonPressMs = 0;
-volatile static bool gRefreshPage = false;
+volatile static bool gTimerTriggered = false;
 
 File gLogFile;
 static bool gLogfileLoaded = false;
-static bool gEnableLogging = false;
+static bool gEnableLogging = true;
 
 void ConfigureScreenMenu() {
   gpScreenMenu->RegisterPage({true, FormatSpeedPage});
-  gpScreenMenu->RegisterPage({true, FormatAirTemperaturePage});
-  gpScreenMenu->RegisterPage({true, FormatFuelInfoPage});
-  gpScreenMenu->RegisterPage({true, FormatRuntimeStats});
+  // gpScreenMenu->RegisterPage({true, FormatAirTemperaturePage});
+  // gpScreenMenu->RegisterPage({true, FormatFuelInfoPage});
+  // gpScreenMenu->RegisterPage({true, FormatRuntimeStats});
   // gpScreenMenu->RegisterPage({false, FormatDebugPage});
+  gpScreenMenu->RegisterPage({false, FormatLoggingPage});
   gpScreenMenu->SetDefaultScreen();
 }
 
@@ -143,19 +145,17 @@ void FormatLoggingPage(String& Line1, String& Line2) {
   if (gEnableLogging && gLogfileLoaded) {
     char aBuffer[65];
     int aNumBytes = snprintf(aBuffer, 64, "Millis: %lu", millis());
-    gLogFile.write(aBuffer, aNumBytes);
+    // gLogFile.write(aBuffer, aNumBytes);
     Line1 = "Logging Enabled!";
     Line2 = "";
   }
 }
 
-void HandleLoadLogFile() {
+void InitSDCard() {
   if (!gLogfileLoaded) {
-    if (SD.begin(SD_CS_PIN)) {
-      gLogFile = SD.open(LOGFILE_NAME, FILE_WRITE);
-      if (gLogFile) {
-        gLogfileLoaded = true;
-      }
+    gLogFile = SD.open(LOGFILE_NAME, FILE_WRITE);
+    if (gLogFile) {
+      gLogfileLoaded = true;
     }
   }
 }
@@ -167,11 +167,11 @@ void HandleButtonRead() {
 
   switch (gButtonPinInput) {
     case A1:
-      gpScreenMenu->DoButtonOne();
+      gpScreenMenu->DoButtonThree();
       gLastButtonPressMs = millis();
       break;
     case A2:
-      gpScreenMenu->DoButtonTwo();
+      gpScreenMenu->DoButtonFour();
       gLastButtonPressMs = millis();
       break;
     case A3:
@@ -213,27 +213,50 @@ void setup() {
   Serial.begin(115200);
   while (!Serial)
     ;
+  Serial.println("Start program");
+  MEMORY_PRINT_FREERAM;
+  MEMORY_PRINT_HEAPSTART;
+
   LiquidCrystal aLcdScreen(LCD_Reset, LCD_Enable, LCD_D4, LCD_D5, LCD_D6,
                            LCD_D7);
   gpScreenMenu = new ScreenMenu(aLcdScreen);
   gpScreenMenu->ClearLcdScreen();
-  if (!SD.begin(SD_CS_PIN)) {
-    gpScreenMenu->WriteTemporaryPage("Failed to", "initialize SD!");
-    delay(1000);
-  }
-  OBDConnect();
+
+  MEMORY_PRINT_FREERAM;
+  MEMORY_PRINT_HEAPEND;
+  Serial.println("End init LCD screen");
+
+  // if (!SD.begin(SD_CS_PIN)) {
+  //   gpScreenMenu->WriteTemporaryPage("Failed to", "initialize SD!");
+  //   delay(1000);
+  // } else {
+  //   Serial.println("Load log file:");
+  //   MEMORY_PRINT_FREERAM;
+  //   MEMORY_PRINT_HEAPSTART;
+  //   HandleLoadLogFile();
+  //   MEMORY_PRINT_FREERAM;
+  //   MEMORY_PRINT_HEAPEND;
+  //   Serial.println("----------");
+  // }
+  // OBDConnect();
+  Serial.println("Load Screen Menu:");
+  MEMORY_PRINT_FREERAM;
+  MEMORY_PRINT_HEAPSTART;
   ConfigureScreenMenu();
+  MEMORY_PRINT_FREERAM;
+  MEMORY_PRINT_HEAPEND;
   noInterrupts();
   ConfigureInterrupts();
   ConfigureTimer();
   interrupts();
+  Serial.println("End program");
 }
 
 void loop() {
   HandleButtonRead();
-  if (gRefreshPage) {
+  if (gTimerTriggered) {
     gpScreenMenu->DoRefresh();
-    gRefreshPage = false;
+    gTimerTriggered = false;
   }
 }
 
@@ -250,4 +273,4 @@ ISR(PCINT1_vect) {
   }
 }
 
-ISR(TIMER1_COMPA_vect) { gRefreshPage = true; }
+ISR(TIMER1_COMPA_vect) { gTimerTriggered = true; }
