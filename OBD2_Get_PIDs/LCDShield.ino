@@ -9,7 +9,7 @@
 #include "ScreenHelper.hpp"
 #include "TimerHelper.hpp"
 
-static constexpr uint8_t LCD_Reset = 9;
+static constexpr uint8_t LCD_RegisterSelect = 9;
 static constexpr uint8_t LCD_Enable = 8;
 static constexpr uint8_t LCD_D7 = 4;
 static constexpr uint8_t LCD_D6 = 5;
@@ -49,7 +49,7 @@ File gLogFile;
 static bool gLogfileLoaded = false;
 static bool gEnableLogging = true;
 
-void ConfigureScreenMenu() {
+void InitScreen() {
   gpScreenMenu->RegisterPage({true, FormatSpeedPage});
   // gpScreenMenu->RegisterPage({true, FormatAirTemperaturePage});
   // gpScreenMenu->RegisterPage({true, FormatFuelInfoPage});
@@ -59,7 +59,7 @@ void ConfigureScreenMenu() {
   gpScreenMenu->SetDefaultScreen();
 }
 
-void OBDConnect() {
+void InitOBD() {
   gpScreenMenu->WriteTemporaryPage("Connecting", "");
   while (true) {
     if (!OBD2.begin()) {
@@ -188,7 +188,7 @@ void HandleButtonRead() {
   }
 }
 
-void ConfigureInterrupts() {
+void InitInterrupts() {
   pinMode(A1, INPUT_PULLUP);
   pinMode(A2, INPUT_PULLUP);
   pinMode(A3, INPUT_PULLUP);
@@ -198,7 +198,7 @@ void ConfigureInterrupts() {
   PCMSK1 |= 0b00011110;
 }
 
-void ConfigureTimer() {
+void InitTimer() {
   TimerHelper aTimerSettings = TimerHelper::DetermineTimerSettings(8);
   TCCR1A = 0;
   TCCR1B = 0;
@@ -217,7 +217,7 @@ void setup() {
   MEMORY_PRINT_FREERAM;
   MEMORY_PRINT_HEAPSTART;
 
-  LiquidCrystal aLcdScreen(LCD_Reset, LCD_Enable, LCD_D4, LCD_D5, LCD_D6,
+  LiquidCrystal aLcdScreen(LCD_RegisterSelect, LCD_Enable, LCD_D4, LCD_D5, LCD_D6,
                            LCD_D7);
   gpScreenMenu = new ScreenMenu(aLcdScreen);
   gpScreenMenu->ClearLcdScreen();
@@ -242,12 +242,12 @@ void setup() {
   Serial.println("Load Screen Menu:");
   MEMORY_PRINT_FREERAM;
   MEMORY_PRINT_HEAPSTART;
-  ConfigureScreenMenu();
+  InitScreen();
   MEMORY_PRINT_FREERAM;
   MEMORY_PRINT_HEAPEND;
   noInterrupts();
-  ConfigureInterrupts();
-  ConfigureTimer();
+  InitInterrupts();
+  InitTimer();
   interrupts();
   Serial.println("End program");
 }

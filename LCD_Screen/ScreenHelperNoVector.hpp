@@ -26,7 +26,10 @@ class ScreenMenu {
       : fLcdScreen(inLcdScreen), fNumberOfPages(0), fCurrentScreenNumber(0) {
     fLcdScreen.begin(16, 2);
   };
+  ScreenMenu() = default;
   ~ScreenMenu() = default;
+
+  ScreenMenu& operator=(ScreenMenu& inMenu) = default;
 
   void MoveDown() {
     if (--fCurrentScreenNumber < 0) {
@@ -58,7 +61,6 @@ class ScreenMenu {
     String aLine1, aLine2;
     fPages[fCurrentScreenNumber].fRefreshCallback(aLine1, aLine2);
     fLcdScreen.clear();
-    fLcdScreen.flush();
     fLcdScreen.setCursor(0, 0);
     fLcdScreen.write(aLine1.c_str());
     fLcdScreen.setCursor(0, 1);
@@ -89,8 +91,9 @@ class ScreenMenu {
   }
 
  private:
-  LiquidCrystal fLcdScreen;
-  Page fPages[5];
+  static constexpr uint8_t fMaxPages = 5;
+  LiquidCrystal& fLcdScreen;
+  Page fPages[fMaxPages];
   uint8_t fNumberOfPages;
   int8_t fCurrentScreenNumber;
 };
