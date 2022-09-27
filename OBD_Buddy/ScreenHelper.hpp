@@ -7,18 +7,17 @@ class ScreenMenu {
   typedef struct Page {
     bool fUpdates;
     RefreshCallback fRefreshCallback;
-    ButtonPressCallback fButtonOneCallback;
-    // ButtonPressCallback fButtonTwoCallback;
+    ButtonPressCallback fButtonCallback;
     Page() : fUpdates(false) {
       fRefreshCallback = NULL;
-      fButtonOneCallback = NULL;
+      fButtonCallback = NULL;
     }
     Page(bool inUpdates, RefreshCallback inCallback)
         : fUpdates(inUpdates), fRefreshCallback(inCallback) {
-      fButtonOneCallback = NULL;
+      fButtonCallback = NULL;
     }
     Page(bool inUpdates, RefreshCallback inCallback, ButtonPressCallback inButtonPressCallback) :
-      fUpdates(inUpdates), fRefreshCallback(inCallback), fButtonOneCallback(inButtonPressCallback) {}
+      fUpdates(inUpdates), fRefreshCallback(inCallback), fButtonCallback(inButtonPressCallback) {}
     Page& operator=(Page& inOther) = default;
   } Page;
 
@@ -31,14 +30,14 @@ class ScreenMenu {
 
   ScreenMenu& operator=(ScreenMenu& inMenu) = default;
 
-  void MoveDown() {
+  void DoButtonTwo() {
     if (--fCurrentScreenNumber < 0) {
       fCurrentScreenNumber = fNumberOfPages - 1;
     }
     DisplayPage();
   }
 
-  void MoveUp() {
+  void DoButtonOne() {
     if (++fCurrentScreenNumber >= fNumberOfPages) {
       fCurrentScreenNumber = 0;
     }
@@ -46,8 +45,8 @@ class ScreenMenu {
   }
 
   void DoButtonThree() {
-    if (fPages[fCurrentScreenNumber].fButtonOneCallback) {
-      fPages[fCurrentScreenNumber].fButtonOneCallback();
+    if (fPages[fCurrentScreenNumber].fButtonCallback) {
+      fPages[fCurrentScreenNumber].fButtonCallback();
     }
   }
 

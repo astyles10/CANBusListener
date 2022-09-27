@@ -21,19 +21,19 @@ static constexpr uint8_t SD_CS_PIN = 4;
 static constexpr char LOGFILE_NAME[] = "Logfile.csv";
 
 // Live Stats page lines
-static constexpr char LineVehicleSpeed[] = "Veh Spd: %lukm/h";
-static constexpr char LineEngineSpeed[] = "Eng Spd: %lurpm";
-static constexpr char LineEngineLoad[] = "Eng Load: %u/100";
-static constexpr char LineTimingAdvance[] = "Timing Adv: %dC";
-static constexpr char LineIntakeAirTemp[] = "Intake Air: %dC";
-static constexpr char LineThrottlePosition[] = "Throttle %u/100";
-static constexpr char LineCurrentRuntimeSeconds[] = "Runtime: %us";
-static constexpr char LineManifoldAbsolutePressure[] = "MAP: %ukPa";
-static constexpr char LineAmbientAirTemp[] = "Amb. Air: %dC";
-static constexpr char LineTimeSinceCodesCleared[] = "Code age %um";
+static constexpr char kLineVehicleSpeed[] = "Veh Spd: %lukm/h";
+static constexpr char kLineEngineSpeed[] = "Eng Spd: %lurpm";
+static constexpr char kLineEngineLoad[] = "Eng Load: %u/100";
+static constexpr char kLineTimingAdvance[] = "Timing Adv: %dC";
+static constexpr char kLineIntakeAirTemp[] = "Intake Air: %dC";
+static constexpr char kLineThrottlePosition[] = "Throttle %u/100";
+static constexpr char kLineCurrentRuntimeSeconds[] = "Runtime: %us";
+static constexpr char kLineManifoldAbsolutePressure[] = "MAP: %ukPa";
+static constexpr char kLineAmbientAirTemp[] = "Amb. Air: %dC";
+static constexpr char kLineTimeSinceCodesCleared[] = "Code age %um";
 
-static constexpr char PageFuelInfo1[] = "Fuel: %s";
-static constexpr char PageFuelInfo2[] = "Tank: %u/100";
+static constexpr char kLineFuelType[] = "Fuel: %s";
+static constexpr char kLineFuelTankLevel[] = "Tank: %u/100";
 
 static constexpr char PageDebug1[] = "OBD Std: %s";
 static constexpr char PageDebug2[] = "ECU: %s";
@@ -76,12 +76,12 @@ void FormatSpeedPage(String& Line1, String& Line2) {
   char aLineBuffer[17];
   {
     unsigned long aVehicleSpeed = lround(OBD2.pidRead(VEHICLE_SPEED));
-    snprintf(aLineBuffer, 16, LineVehicleSpeed, aVehicleSpeed);
+    snprintf(aLineBuffer, 16, kLineVehicleSpeed, aVehicleSpeed);
     Line1 = aLineBuffer;
   }
   {
     unsigned long aEngineSpeed = lround(OBD2.pidRead(ENGINE_RPM));
-    snprintf(aLineBuffer, 16, LineEngineSpeed, aEngineSpeed);
+    snprintf(aLineBuffer, 16, kLineEngineSpeed, aEngineSpeed);
     Line2 = aLineBuffer;
   }
 }
@@ -94,12 +94,12 @@ void FormatAirTemperaturePage(String& Line1, String& Line2) {
   char aLineBuffer[17];
   {
     long aAmbientAirTemp = lround(OBD2.pidRead(AMBIENT_AIR_TEMPERATURE));
-    snprintf(aLineBuffer, 16, LineAmbientAirTemp, aAmbientAirTemp);
+    snprintf(aLineBuffer, 16, kLineAmbientAirTemp, aAmbientAirTemp);
     Line1 = aLineBuffer;
   }
   {
     long aIntakeAirTemp = lround(OBD2.pidRead(AIR_INTAKE_TEMPERATURE));
-    snprintf(aLineBuffer, 16, LineIntakeAirTemp, aIntakeAirTemp);
+    snprintf(aLineBuffer, 16, kLineIntakeAirTemp, aIntakeAirTemp);
     Line2 = aLineBuffer;
   }
 }
@@ -112,13 +112,13 @@ void FormatFuelInfoPage(String& Line1, String& Line2) {
   char aLineBuffer[33];
   {
     long aFuelType = lround(OBD2.pidRead(FUEL_TYPE));
-    snprintf(aLineBuffer, 32, PageFuelInfo1, DetermineFuelType(aFuelType));
+    snprintf(aLineBuffer, 32, kLineFuelType, DetermineFuelType(aFuelType));
     Line1 = aLineBuffer;
   }
   {
     uint8_t aFuelLevel =
         static_cast<uint8_t>(OBD2.pidRead(FUEL_TANK_LEVEL_INPUT));
-    snprintf(aLineBuffer, 32, PageFuelInfo2, aFuelLevel);
+    snprintf(aLineBuffer, 32, kLineFuelTankLevel, aFuelLevel);
     Line2 = aLineBuffer;
   }
 }
@@ -127,7 +127,7 @@ void FormatRuntimeStats(String& Line1, String& Line2) {
   char aLineBuffer[17];
   {
     long aRuntimeSeconds = lround(OBD2.pidRead(RUN_TIME_SINCE_ENGINE_START));
-    snprintf(aLineBuffer, 16, LineCurrentRuntimeSeconds, aRuntimeSeconds);
+    snprintf(aLineBuffer, 16, kLineCurrentRuntimeSeconds, aRuntimeSeconds);
     Line1 = aLineBuffer;
   }
   Line2 = "";
@@ -175,7 +175,7 @@ void HandleButtonRead() {
       gLastButtonPressMs = millis();
       break;
     case A3:
-      gpScreenMenu->MoveDown();
+      gpScreenMenu->DoButtonTwo();
       gLastButtonPressMs = millis();
       break;
     case A4:
